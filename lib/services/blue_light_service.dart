@@ -19,7 +19,7 @@ class BlueLightService {
           height: double.infinity,
           color: Color.fromRGBO(
             255,
-            int((200 * intensity).clamp(0, 200)),
+            ((200 * intensity).clamp(0, 200)).toInt(),
             0,
             intensity * 0.35,
           ),
@@ -39,7 +39,7 @@ class BlueLightService {
   static Color getFilterColor(double intensity) {
     return Color.fromRGBO(
       255,
-      int((200 * intensity).clamp(0, 200)),
+      ((200 * intensity).clamp(0, 200)).toInt(),
       0,
       intensity * 0.35,
     );

@@ -251,7 +251,7 @@ class _ReminderScreenState extends State<ReminderScreen> {
                                 horizontal: 24,
                                 vertical: 12,
                               ),
-                          ),
+                          ))
                         else
                           OutlinedButton.icon(
                             onPressed: _stopTimer,
