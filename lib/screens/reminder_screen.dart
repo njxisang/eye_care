@@ -1,18 +1,19 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../providers/settings_provider.dart';
 import '../providers/reminder_provider.dart';
 import '../services/notification_service.dart';
 
-class ReminderScreen extends StatefulWidget {
+class ReminderScreen extends ConsumerStatefulWidget {
   const ReminderScreen({super.key});
 
   @override
-  State<ReminderScreen> createState() => _ReminderScreenState();
+  ConsumerState<ReminderScreen> createState() => _ReminderScreenState();
 }
 
-class _ReminderScreenState extends State<ReminderScreen> {
+class _ReminderScreenState extends ConsumerState<ReminderScreen> {
   Timer? _timer;
   int _elapsed = 0;
   bool _isRunning = false;
@@ -54,15 +55,15 @@ class _ReminderScreenState extends State<ReminderScreen> {
   Future<void> _triggerReminder() async {
     await NotificationService.showEyeRestReminder();
     if (mounted) {
-      final reminder = context.read<ReminderProvider>();
+      final reminder = ref.read(reminderProviderProvider);
       await reminder.addReminder('eye_rest');
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final settings = context.watch<SettingsProvider>();
-    final reminder = context.watch<ReminderProvider>();
+    final settings = ref.watch(settingsProviderProvider);
+    final reminder = ref.watch(reminderProviderProvider);
 
     return Scaffold(
       appBar: AppBar(

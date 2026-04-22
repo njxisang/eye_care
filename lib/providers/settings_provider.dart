@@ -1,17 +1,26 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+final settingsProviderProvider = ChangeNotifierProvider<SettingsProvider>((ref) {
+  return SettingsProvider();
+});
 
 class SettingsProvider extends ChangeNotifier {
   static const String _keyBlueLightEnabled = 'blue_light_enabled';
-  static const String _keyBlueLightIntensity = 'blue_light_intensity'; // 0.0 ~ 1.0
-  static const String _keyBrightness = 'brightness'; // 0.0 ~ 1.0
+  static const String _keyBlueLightIntensity = 'blue_light_intensity';
+  static const String _keyBrightness = 'brightness';
   static const String _keyAutoBrightness = 'auto_brightness';
   static const String _keyReminderEnabled = 'reminder_enabled';
-  static const String _keyReminderInterval = 'reminder_interval'; // minutes
-  static const String _keyScheduledStart = 'scheduled_start'; // "HH:mm"
-  static const String _keyScheduledEnd = 'scheduled_end'; // "HH:mm"
+  static const String _keyReminderInterval = 'reminder_interval';
+  static const String _keyScheduledStart = 'scheduled_start';
+  static const String _keyScheduledEnd = 'scheduled_end';
   static const String _keyScheduledEnabled = 'scheduled_enabled';
   static const String _keyDailyGoalMinutes = 'daily_goal_minutes';
+  static const String _keyDarkMode = 'dark_mode';
+  static const String _keyOnboardingCompleted = 'onboarding_completed';
+  static const String _keyPomodoroWorkMinutes = 'pomodoro_work_minutes';
+  static const String _keyPomodoroBreakMinutes = 'pomodoro_break_minutes';
 
   bool _blueLightEnabled = false;
   double _blueLightIntensity = 0.5;
@@ -23,8 +32,11 @@ class SettingsProvider extends ChangeNotifier {
   String _scheduledEnd = "07:00";
   bool _scheduledEnabled = false;
   int _dailyGoalMinutes = 240;
+  bool _darkMode = false;
+  bool _onboardingCompleted = false;
+  int _pomodoroWorkMinutes = 25;
+  int _pomodoroBreakMinutes = 5;
 
-  // Getters
   bool get blueLightEnabled => _blueLightEnabled;
   double get blueLightIntensity => _blueLightIntensity;
   double get brightness => _brightness;
@@ -35,6 +47,10 @@ class SettingsProvider extends ChangeNotifier {
   String get scheduledEnd => _scheduledEnd;
   bool get scheduledEnabled => _scheduledEnabled;
   int get dailyGoalMinutes => _dailyGoalMinutes;
+  bool get darkMode => _darkMode;
+  bool get onboardingCompleted => _onboardingCompleted;
+  int get pomodoroWorkMinutes => _pomodoroWorkMinutes;
+  int get pomodoroBreakMinutes => _pomodoroBreakMinutes;
 
   Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
@@ -48,6 +64,10 @@ class SettingsProvider extends ChangeNotifier {
     _scheduledEnd = prefs.getString(_keyScheduledEnd) ?? "07:00";
     _scheduledEnabled = prefs.getBool(_keyScheduledEnabled) ?? false;
     _dailyGoalMinutes = prefs.getInt(_keyDailyGoalMinutes) ?? 240;
+    _darkMode = prefs.getBool(_keyDarkMode) ?? false;
+    _onboardingCompleted = prefs.getBool(_keyOnboardingCompleted) ?? false;
+    _pomodoroWorkMinutes = prefs.getInt(_keyPomodoroWorkMinutes) ?? 25;
+    _pomodoroBreakMinutes = prefs.getInt(_keyPomodoroBreakMinutes) ?? 5;
     notifyListeners();
   }
 
@@ -63,6 +83,10 @@ class SettingsProvider extends ChangeNotifier {
     await prefs.setString(_keyScheduledEnd, _scheduledEnd);
     await prefs.setBool(_keyScheduledEnabled, _scheduledEnabled);
     await prefs.setInt(_keyDailyGoalMinutes, _dailyGoalMinutes);
+    await prefs.setBool(_keyDarkMode, _darkMode);
+    await prefs.setBool(_keyOnboardingCompleted, _onboardingCompleted);
+    await prefs.setInt(_keyPomodoroWorkMinutes, _pomodoroWorkMinutes);
+    await prefs.setInt(_keyPomodoroBreakMinutes, _pomodoroBreakMinutes);
   }
 
   Future<void> setBlueLightEnabled(bool v) async {
@@ -121,6 +145,30 @@ class SettingsProvider extends ChangeNotifier {
 
   Future<void> setDailyGoalMinutes(int v) async {
     _dailyGoalMinutes = v;
+    notifyListeners();
+    await _save();
+  }
+
+  Future<void> setDarkMode(bool v) async {
+    _darkMode = v;
+    notifyListeners();
+    await _save();
+  }
+
+  Future<void> setOnboardingCompleted(bool v) async {
+    _onboardingCompleted = v;
+    notifyListeners();
+    await _save();
+  }
+
+  Future<void> setPomodoroWorkMinutes(int v) async {
+    _pomodoroWorkMinutes = v;
+    notifyListeners();
+    await _save();
+  }
+
+  Future<void> setPomodoroBreakMinutes(int v) async {
+    _pomodoroBreakMinutes = v;
     notifyListeners();
     await _save();
   }

@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../providers/settings_provider.dart';
 import '../services/blue_light_service.dart';
 
-class BlueLightScreen extends StatefulWidget {
+class BlueLightScreen extends ConsumerStatefulWidget {
   const BlueLightScreen({super.key});
 
   @override
-  State<BlueLightScreen> createState() => _BlueLightScreenState();
+  ConsumerState<BlueLightScreen> createState() => _BlueLightScreenState();
 }
 
-class _BlueLightScreenState extends State<BlueLightScreen> {
+class _BlueLightScreenState extends ConsumerState<BlueLightScreen> {
   @override
   void initState() {
     super.initState();
@@ -20,7 +21,7 @@ class _BlueLightScreenState extends State<BlueLightScreen> {
   }
 
   void _applyFilter() {
-    final settings = context.read<SettingsProvider>();
+    final settings = ref.read(settingsProviderProvider);
     if (settings.blueLightEnabled) {
       BlueLightService.setFilter(settings.blueLightIntensity, context);
     } else {
@@ -30,7 +31,7 @@ class _BlueLightScreenState extends State<BlueLightScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final settings = context.watch<SettingsProvider>();
+    final settings = ref.watch(settingsProviderProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -329,7 +330,7 @@ class _BlueLightScreenState extends State<BlueLightScreen> {
   }
 
   Future<void> _setPreset(double intensity) async {
-    final settings = context.read<SettingsProvider>();
+    final settings = ref.read(settingsProviderProvider);
     await settings.setBlueLightIntensity(intensity);
     await settings.setBlueLightEnabled(true);
     _applyFilter();

@@ -1,29 +1,29 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 import '../providers/usage_provider.dart';
 import '../widgets/stat_card.dart';
 
-class StatsScreen extends StatefulWidget {
+class StatsScreen extends ConsumerStatefulWidget {
   const StatsScreen({super.key});
 
   @override
-  State<StatsScreen> createState() => _StatsScreenState();
+  ConsumerState<StatsScreen> createState() => _StatsScreenState();
 }
 
-class _StatsScreenState extends State<StatsScreen> {
+class _StatsScreenState extends ConsumerState<StatsScreen> {
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<UsageProvider>().simulateTodayData();
+      ref.read(usageProviderProvider.notifier).simulateTodayData();
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    final usage = context.watch<UsageProvider>();
+    final usage = ref.watch(usageProviderProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -468,7 +468,7 @@ class _StatsScreenState extends State<StatsScreen> {
   }
 
   void _showGoalPicker(BuildContext context) async {
-    final usage = context.read<UsageProvider>();
+    final usage = ref.read(usageProviderProvider);
     final current = usage.todayUsage?.goalMinutes ?? 240;
     final result = await showDialog<int>(
       context: context,

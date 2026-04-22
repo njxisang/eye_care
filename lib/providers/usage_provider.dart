@@ -1,7 +1,12 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart' as path;
 import 'package:intl/intl.dart';
+
+final usageProviderProvider = ChangeNotifierProvider<UsageProvider>((ref) {
+  return UsageProvider();
+});
 
 class AppUsage {
   final String packageName;
@@ -82,7 +87,7 @@ class UsageProvider extends ChangeNotifier {
   Future<void> loadToday() async {
     final today = DateTime.now();
     _todayTotalMinutes = await _getDayMinutes(today);
-    
+
     final db = await this.db;
     final dayRow = await db.query(
       _tableName,
@@ -151,7 +156,7 @@ class UsageProvider extends ChangeNotifier {
     final db = await this.db;
     final key = _dateKey(today);
     final existing = await db.query(_tableName, where: 'date = ?', whereArgs: [key]);
-    
+
     if (existing.isEmpty) {
       await db.insert(_tableName, {
         'date': key,
@@ -217,7 +222,6 @@ class UsageProvider extends ChangeNotifier {
     return packageName.split('.').last;
   }
 
-  // 模拟数据（实际项目需要UsageStats权限）
   Future<void> simulateTodayData() async {
     final today = DateTime.now();
     final db = await this.db;

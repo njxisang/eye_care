@@ -1,19 +1,20 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../providers/settings_provider.dart';
 import '../providers/usage_provider.dart';
 import '../providers/reminder_provider.dart';
 import '../services/blue_light_service.dart';
 import '../widgets/stat_card.dart';
 
-class HomeScreen extends StatefulWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   void initState() {
     super.initState();
@@ -23,7 +24,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _applyBlueLight() {
-    final settings = context.read<SettingsProvider>();
+    final settings = ref.read(settingsProviderProvider);
     if (settings.blueLightEnabled) {
       BlueLightService.setFilter(settings.blueLightIntensity, context);
     }
@@ -31,9 +32,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final settings = context.watch<SettingsProvider>();
-    final usage = context.watch<UsageProvider>();
-    final reminder = context.watch<ReminderProvider>();
+    final settings = ref.watch(settingsProviderProvider);
+    final usage = ref.watch(usageProviderProvider);
+    final reminder = ref.watch(reminderProviderProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -41,8 +42,12 @@ class _HomeScreenState extends State<HomeScreen> {
         centerTitle: true,
         actions: [
           IconButton(
+            icon: const Icon(Icons.menu_book_outlined),
+            onPressed: () => context.push('/knowledge'),
+          ),
+          IconButton(
             icon: const Icon(Icons.settings_outlined),
-            onPressed: () => _showSettingsSheet(context),
+            onPressed: () => context.push('/settings'),
           ),
         ],
       ),
@@ -132,6 +137,22 @@ class _HomeScreenState extends State<HomeScreen> {
 
             // 使用时长进度
             if (usage.todayUsage != null) _buildUsageProgress(usage),
+
+            // 番茄工作法入口
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () => context.push('/pomodoro'),
+                icon: const Icon(Icons.timer),
+                label: const Text('开始专注（番茄钟）'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF4CAF50),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                ),
+              ),
+            ),
           ],
         ),
       ),
@@ -288,10 +309,10 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-class _SettingsSheet extends StatelessWidget {
+class _SettingsSheet extends ConsumerWidget {
   @override
-  Widget build(BuildContext context) {
-    final settings = context.watch<SettingsProvider>();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final settings = ref.watch(settingsProviderProvider);
 
     return Container(
       padding: const EdgeInsets.all(24),

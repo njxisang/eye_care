@@ -1,12 +1,16 @@
 import 'package:flutter/foundation.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart' as path;
 import 'package:intl/intl.dart';
 
+final reminderProviderProvider = ChangeNotifierProvider<ReminderProvider>((ref) {
+  return ReminderProvider();
+});
+
 class ReminderRecord {
   final DateTime time;
-  final String type; // 'eye_rest', 'usage_limit'
+  final String type;
 
   ReminderRecord({required this.time, required this.type});
 }
@@ -51,8 +55,8 @@ class ReminderProvider extends ChangeNotifier {
   Future<void> loadToday() async {
     final today = DateTime.now();
     final key = _dateKey(today);
-    final db = await this.db;
-    final rows = await db.query(
+    final database = await db;
+    final rows = await database.query(
       _tableName,
       where: "time LIKE ?",
       whereArgs: ['$key%'],
@@ -68,8 +72,8 @@ class ReminderProvider extends ChangeNotifier {
 
   Future<void> addReminder(String type) async {
     final now = DateTime.now();
-    final db = await this.db;
-    await db.insert(_tableName, {
+    final database = await db;
+    await database.insert(_tableName, {
       'time': now.toIso8601String(),
       'type': type,
     });
@@ -79,8 +83,8 @@ class ReminderProvider extends ChangeNotifier {
   Future<void> clearToday() async {
     final today = DateTime.now();
     final key = _dateKey(today);
-    final db = await this.db;
-    await db.delete(_tableName, where: "time LIKE ?", whereArgs: ['$key%']);
+    final database = await db;
+    await database.delete(_tableName, where: "time LIKE ?", whereArgs: ['$key%']);
     await loadToday();
   }
 }
