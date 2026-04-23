@@ -90,10 +90,10 @@ flutter build apk --debug
 flutter build apk --release
 ```
 
-> 本地 Java 环境路径（miniconda3 内嵌 JDK17）：
+> 本地 Java 环境路径（JDK 17）和 Android SDK 路径根据实际安装位置设置：
 > ```bash
-> export JAVA_HOME=/home/xisang/miniconda3/pkgs/openjdk-17.0.14-h1c92337_0
-> export ANDROID_HOME=/home/xisang/Android/Sdk
+> export JAVA_HOME=/path/to/jdk17
+> export ANDROID_HOME=/path/to/android-sdk
 > ```
 
 ## Git 工作流
