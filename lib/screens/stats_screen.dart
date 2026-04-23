@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 import '../providers/usage_provider.dart';
+import '../services/usage_stats_service.dart';
 import '../widgets/stat_card.dart';
 
 class StatsScreen extends ConsumerStatefulWidget {
@@ -16,10 +17,21 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
   @override
   void initState() {
     super.initState();
-      WidgetsBinding.instance.addPostFrameCallback((_) async {
-      await ref.read(usageProviderProvider.notifier).populateSimulatedData();
-      await ref.read(usageProviderProvider.notifier).refreshToday();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      // 启动屏幕时间追踪服务
+      await UsageStatsService.startTracking();
+      // 同步屏幕时间到数据库
+      await _syncScreenTime();
     });
+  }
+
+  Future<void> _syncScreenTime() async {
+    final usage = ref.read(usageProviderProvider);
+    final screenMinutes = await UsageStatsService.getTodayScreenMinutes();
+    // 用屏幕时间更新数据库，如果今日已有数据则累加
+    if (screenMinutes > 0) {
+      await usage.addMinutes(screenMinutes);
+    }
   }
 
   @override

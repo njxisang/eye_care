@@ -32,6 +32,27 @@ class MainActivity : FlutterActivity() {
                         result.error("UNAVAILABLE", "Cannot open display settings", null)
                     }
                 }
+                "getScreenTimeMinutes" -> {
+                    try {
+                        val intent = Intent(this, ScreenTimeService::class.java)
+                        startService(intent)
+                        // Return current minutes (simplified - in production would bind to service)
+                        val prefs = getSharedPreferences("eye_care_screen", MODE_PRIVATE)
+                        val minutes = prefs.getInt("screen_time_today", 0)
+                        result.success(minutes)
+                    } catch (e: Exception) {
+                        result.success(0)
+                    }
+                }
+                "startScreenTracking" -> {
+                    try {
+                        val intent = Intent(this, ScreenTimeService::class.java)
+                        startService(intent)
+                        result.success(true)
+                    } catch (e: Exception) {
+                        result.error("UNAVAILABLE", "Cannot start service", null)
+                    }
+                }
                 else -> result.notImplemented()
             }
         }

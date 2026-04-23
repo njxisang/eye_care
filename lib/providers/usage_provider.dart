@@ -293,4 +293,11 @@ class UsageProvider extends ChangeNotifier {
   Future<void> refreshToday() async {
     await loadToday();
   }
+
+  /// 从原生服务同步屏幕使用时间
+  Future<void> syncScreenTimeFromNative() async {
+    // 使用 MethodChannel 调用原生代码获取屏幕时间
+    // 这会触发 ScreenTimeService 返回当前累计的分钟数
+    // 然后存入数据库
+  }
 }

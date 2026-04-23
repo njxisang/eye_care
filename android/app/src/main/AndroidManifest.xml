@@ -38,6 +38,20 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+        <!-- Screen state receiver for screen time tracking -->
+        <receiver
+            android:name=".ScreenStateReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.SCREEN_ON"/>
+                <action android:name="android.intent.action.SCREEN_OFF"/>
+            </intent-filter>
+        </receiver>
+        <!-- Screen time tracking service -->
+        <service
+            android:name=".ScreenTimeService"
+            android:enabled="true"
+            android:exported="false"/>
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and
