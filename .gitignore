@@ -15,6 +15,12 @@ android/app/src/main/res/
 android/app/src/main/java/
 android/eye_care_android.iml
 
+# Android generated files
+android/*.gradle.kts
+
 # Local configuration (contains personal paths)
 **/*.local*
 **/local.properties
+
+# Review documentation
+REVIEW.md
