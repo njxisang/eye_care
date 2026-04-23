@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'router.dart';
+import 'providers/settings_provider.dart';
 
-class EyeCareApp extends StatelessWidget {
+class EyeCareApp extends ConsumerWidget {
   const EyeCareApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final settings = ref.watch(settingsProviderProvider);
+    final themeMode = settings.darkMode ? ThemeMode.dark : ThemeMode.light;
+
     return MaterialApp.router(
       title: '护眼宝',
       debugShowCheckedModeBanner: false,
@@ -14,9 +19,9 @@ class EyeCareApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(
           seedColor: const Color(0xFF4CAF50),
           brightness: Brightness.light,
-          surface: const Color(0xFFF5F5DC),
+          surface: const Color(0xFFFFF8E1),
         ),
-        scaffoldBackgroundColor: const Color(0xFFF5F5DC),
+        scaffoldBackgroundColor: const Color(0xFFFFF8E1),
         appBarTheme: const AppBarTheme(
           backgroundColor: Color(0xFF4CAF50),
           foregroundColor: Colors.white,
@@ -41,7 +46,7 @@ class EyeCareApp extends StatelessWidget {
           brightness: Brightness.dark,
         ),
       ),
-      themeMode: ThemeMode.system,
+      themeMode: themeMode,
       routerConfig: router,
     );
   }

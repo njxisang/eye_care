@@ -6,6 +6,13 @@ final settingsProviderProvider = ChangeNotifierProvider<SettingsProvider>((ref) 
   return SettingsProvider();
 });
 
+/// 静态工厂：初始化 SettingsProvider 并等待数据加载完成
+Future<SettingsProvider> initializeSettings() async {
+  final instance = SettingsProvider();
+  await instance.load();
+  return instance;
+}
+
 class SettingsProvider extends ChangeNotifier {
   static const String _keyBlueLightEnabled = 'blue_light_enabled';
   static const String _keyBlueLightIntensity = 'blue_light_intensity';

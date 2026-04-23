@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import '../providers/settings_provider.dart';
 import '../providers/reminder_provider.dart';
 import '../services/notification_service.dart';

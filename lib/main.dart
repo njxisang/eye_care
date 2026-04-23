@@ -16,16 +16,18 @@ void main() async {
     ),
   );
 
-  final settingsProvider = SettingsProvider()..load();
-  final usageProvider = UsageProvider()..loadToday();
-  final reminderProvider = ReminderProvider()..load();
+  // 使用 FutureProvider 模式，await 初始化完成后再 runApp
+  // 这样避免了在 main.dart 里手动链式调用 load() 导致的竞态
+  final settingsContainer = await initializeSettings();
+  final usageContainer = await initializeUsage();
+  final reminderContainer = await initializeReminder();
 
   runApp(
     ProviderScope(
       overrides: [
-        settingsProviderProvider.overrideWith((_) => settingsProvider),
-        usageProviderProvider.overrideWith((_) => usageProvider),
-        reminderProviderProvider.overrideWith((_) => reminderProvider),
+        settingsProviderProvider.overrideWith((_) => settingsContainer),
+        usageProviderProvider.overrideWith((_) => usageContainer),
+        reminderProviderProvider.overrideWith((_) => reminderContainer),
       ],
       child: const EyeCareApp(),
     ),

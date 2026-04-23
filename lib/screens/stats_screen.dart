@@ -16,8 +16,9 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(usageProviderProvider.notifier).simulateTodayData();
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await ref.read(usageProviderProvider.notifier).populateSimulatedData();
+      await ref.read(usageProviderProvider.notifier).refreshToday();
     });
   }
 
@@ -127,39 +128,70 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
               const SizedBox(height: 16),
             ],
 
-            // 应用排行
-            if (usage.todayUsage != null &&
-                usage.todayUsage!.apps.isNotEmpty) ...[
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        '应用使用排行',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
+            // 应用排行（无数据时显示引导）
+            if (usage.todayUsage != null) ...[
+              if (usage.todayUsage!.apps.isEmpty)
+                Card(
+                  color: const Color(0xFFFFF8E1),
+                  child: Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      children: [
+                        const Icon(Icons.bar_chart, size: 48, color: Colors.orange),
+                        const SizedBox(height: 12),
+                        const Text(
+                          '暂无使用数据',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 12),
-                      ...usage.todayUsage!.apps.map((app) {
-                        final total = usage.todayUsage!.totalMinutes;
-                        final pct = total > 0
-                            ? (app.usageMinutes / total * 100)
-                            : 0.0;
-                        return _AppUsageTile(
-                          appName: app.appName,
-                          category: app.category,
-                          minutes: app.usageMinutes,
-                          pct: pct,
-                        );
-                      }),
-                    ],
+                        const SizedBox(height: 8),
+                        Text(
+                          '请在「系统设置 → 权限管理」中授权「使用情况访问权限」',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(color: Colors.grey[600], fontSize: 13),
+                        ),
+                        const SizedBox(height: 12),
+                        TextButton(
+                          onPressed: () => usage.refreshToday(),
+                          child: const Text('刷新'),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              else
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          '应用使用排行',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        ...usage.todayUsage!.apps.map((app) {
+                          final total = usage.todayUsage!.totalMinutes;
+                          final pct = total > 0
+                              ? (app.usageMinutes / total * 100)
+                              : 0.0;
+                          return _AppUsageTile(
+                            appName: app.appName,
+                            category: app.category,
+                            minutes: app.usageMinutes,
+                            pct: pct,
+                          );
+                        }),
+                      ],
+                    ),
                   ),
                 ),
-              ),
               const SizedBox(height: 16),
             ],
 
@@ -236,7 +268,6 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
 
   Widget _buildWeekChart(List<DayUsage> week) {
     final maxMins = week.map((d) => d.totalMinutes).fold(1, (a, b) => a > b ? a : b);
-    final goalMins = week.isNotEmpty ? week.first.goalMinutes : 240;
 
     return BarChart(
       BarChartData(

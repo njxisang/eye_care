@@ -8,6 +8,13 @@ final reminderProviderProvider = ChangeNotifierProvider<ReminderProvider>((ref) 
   return ReminderProvider();
 });
 
+/// 静态工厂：初始化 ReminderProvider 并等待数据加载完成
+Future<ReminderProvider> initializeReminder() async {
+  final instance = ReminderProvider();
+  await instance.load();
+  return instance;
+}
+
 class ReminderRecord {
   final DateTime time;
   final String type;
@@ -41,6 +48,9 @@ class ReminderProvider extends ChangeNotifier {
             type TEXT NOT NULL
           )
         ''');
+      },
+      onUpgrade: (db, oldVersion, newVersion) async {
+        // 未来版本可在此添加字段迁移
       },
     );
     return _db!;
