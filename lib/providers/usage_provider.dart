@@ -252,22 +252,23 @@ class UsageProvider extends ChangeNotifier {
     final db = await this.db;
     final key = _dateKey(today);
 
-    // 先确保有今日汇总记录
+    // 检查是否已有今日数据，如果有就不再填充模拟数据
     final existing = await db.query(_tableName, where: 'date = ?', whereArgs: [key]);
-    if (existing.isEmpty) {
-      await db.insert(_tableName, {
-        'date': key,
-        'total_minutes': 180,
-        'goal_minutes': 240,
-      });
-    }
+    if (existing.isNotEmpty) return;
+
+    // 无数据时才填充模拟演示数据
+    await db.insert(_tableName, {
+      'date': key,
+      'total_minutes': 0,
+      'goal_minutes': 240,
+    });
 
     final apps = [
-      ('com.tencent.mm', '微信', 45, '社交'),
-      ('com.tencent.mobileqq', 'QQ', 20, '社交'),
-      ('com.zhihu', '知乎', 35, '阅读'),
-      ('com.ss.android.ugc.aweme', '抖音', 60, '视频'),
-      ('com.spotify', '音乐', 15, '其他'),
+      ('com.tencent.mm', '微信', 0, '社交'),
+      ('com.tencent.mobileqq', 'QQ', 0, '社交'),
+      ('com.zhihu', '知乎', 0, '阅读'),
+      ('com.ss.android.ugc.aweme', '抖音', 0, '视频'),
+      ('com.spotify', '音乐', 0, '其他'),
     ];
 
     for (final app in apps) {

@@ -13,10 +13,6 @@ class ReminderScreen extends ConsumerStatefulWidget {
 }
 
 class _ReminderScreenState extends ConsumerState<ReminderScreen> {
-  Timer? _timer;
-  int _elapsedSeconds = 0;
-  bool _isRunning = false;
-
   @override
   void initState() {
     super.initState();
@@ -25,49 +21,15 @@ class _ReminderScreenState extends ConsumerState<ReminderScreen> {
 
   @override
   void dispose() {
-    _timer?.cancel();
     super.dispose();
   }
 
   void _startTimer(int intervalMinutes) {
-    _timer?.cancel();
-    _elapsedSeconds = 0;
-    _isRunning = true;
-    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      _elapsedSeconds++;
-      if (_elapsedSeconds >= intervalMinutes * 60) {
-        _triggerReminder();
-        _elapsedSeconds = 0;
-      }
-      if (mounted) setState(() {});
-    });
-    if (mounted) setState(() {});
+    ref.read(reminderProviderProvider.notifier).startTimer(intervalMinutes);
   }
 
   void _stopTimer() {
-    _timer?.cancel();
-    _isRunning = false;
-    _elapsedSeconds = 0;
-    if (mounted) setState(() {});
-  }
-
-  int get _remainingSeconds {
-    final settings = ref.watch(settingsProviderProvider);
-    return settings.reminderInterval * 60 - _elapsedSeconds;
-  }
-
-  double get _progress {
-    final settings = ref.watch(settingsProviderProvider);
-    final total = settings.reminderInterval * 60;
-    return (_elapsedSeconds / total).clamp(0.0, 1.0);
-  }
-
-  Future<void> _triggerReminder() async {
-    await NotificationService.showEyeRestReminder();
-    if (mounted) {
-      final reminder = ref.read(reminderProviderProvider);
-      await reminder.addReminder('eye_rest');
-    }
+    ref.read(reminderProviderProvider.notifier).stopTimer();
   }
 
   @override
@@ -178,7 +140,10 @@ class _ReminderScreenState extends ConsumerState<ReminderScreen> {
                               color: selected ? Colors.white : Colors.black87,
                             ),
                             onSelected: (v) {
-                              if (v) settings.setReminderInterval(mins);
+                              if (v) {
+                                settings.setReminderInterval(mins);
+                                reminder.updateInterval(mins);
+                              }
                             },
                           );
                         }).toList(),
@@ -211,7 +176,7 @@ class _ReminderScreenState extends ConsumerState<ReminderScreen> {
                           width: 160,
                           height: 160,
                           child: CircularProgressIndicator(
-                            value: _isRunning ? _progress : 0,
+                            value: reminder.isRunning ? reminder.progress : 0,
                             strokeWidth: 12,
                             backgroundColor: Colors.grey[200],
                             valueColor: const AlwaysStoppedAnimation(
@@ -222,8 +187,8 @@ class _ReminderScreenState extends ConsumerState<ReminderScreen> {
                         Column(
                           children: [
                             Text(
-                              _isRunning
-                                  ? _formatSeconds(_remainingSeconds)
+                              reminder.isRunning
+                                  ? _formatSeconds(reminder.remainingSeconds)
                                   : '--:--',
                               style: const TextStyle(
                                 fontSize: 48,
@@ -246,7 +211,7 @@ class _ReminderScreenState extends ConsumerState<ReminderScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        if (!_isRunning)
+                        if (!reminder.isRunning)
                           ElevatedButton.icon(
                             onPressed: () => _startTimer(
                                 settings.reminderInterval),

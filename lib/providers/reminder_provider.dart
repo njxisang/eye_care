@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sqflite/sqflite.dart';
@@ -30,9 +31,21 @@ class ReminderProvider extends ChangeNotifier {
   int _todayEyeRestCount = 0;
   int _todayUsageLimitCount = 0;
 
+  // 倒计时状态
+  Timer? _timer;
+  bool _isRunning = false;
+  int _elapsedSeconds = 0;
+  int _intervalMinutes = 20;
+
   List<ReminderRecord> get todayRecords => _todayRecords;
   int get todayEyeRestCount => _todayEyeRestCount;
   int get todayUsageLimitCount => _todayUsageLimitCount;
+  bool get isRunning => _isRunning;
+  int get elapsedSeconds => _elapsedSeconds;
+  int get intervalMinutes => _intervalMinutes;
+
+  int get remainingSeconds => _intervalMinutes * 60 - _elapsedSeconds;
+  double get progress => (_elapsedSeconds / (_intervalMinutes * 60)).clamp(0.0, 1.0);
 
   Future<Database> get db async {
     if (_db != null) return _db!;
@@ -96,5 +109,33 @@ class ReminderProvider extends ChangeNotifier {
     final database = await db;
     await database.delete(_tableName, where: "time LIKE ?", whereArgs: ['$key%']);
     await loadToday();
+  }
+
+  void startTimer(int intervalMinutes) {
+    _timer?.cancel();
+    _intervalMinutes = intervalMinutes;
+    _elapsedSeconds = 0;
+    _isRunning = true;
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) async {
+      _elapsedSeconds++;
+      if (_elapsedSeconds >= _intervalMinutes * 60) {
+        await addReminder('eye_rest');
+        _elapsedSeconds = 0;
+      }
+      notifyListeners();
+    });
+    notifyListeners();
+  }
+
+  void stopTimer() {
+    _timer?.cancel();
+    _isRunning = false;
+    _elapsedSeconds = 0;
+    notifyListeners();
+  }
+
+  void updateInterval(int minutes) {
+    _intervalMinutes = minutes;
+    notifyListeners();
   }
 }
