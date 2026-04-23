@@ -1,0 +1,20 @@
+# Flutter build output
+build/
+.flutter-plugins-dependencies
+.flutter-plugins
+
+# Dart tool state
+.dart_tool/
+
+# Android build artifacts
+android/.gradle/
+android/build/
+android/app/src/debug/
+android/app/src/profile/
+android/app/src/main/res/
+android/app/src/main/java/
+android/eye_care_android.iml
+
+# Local configuration (contains personal paths)
+**/*.local*
+**/local.properties
