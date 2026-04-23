@@ -8,6 +8,13 @@ final usageProviderProvider = ChangeNotifierProvider<UsageProvider>((ref) {
   return UsageProvider();
 });
 
+/// 静态工厂：初始化 UsageProvider 并等待数据加载完成
+Future<UsageProvider> initializeUsage() async {
+  final instance = UsageProvider();
+  await instance.loadToday();
+  return instance;
+}
+
 class AppUsage {
   final String packageName;
   final String appName;
@@ -77,6 +84,10 @@ class UsageProvider extends ChangeNotifier {
             category TEXT NOT NULL
           )
         ''');
+      },
+      onUpgrade: (db, oldVersion, newVersion) async {
+        // 未来版本可在此添加字段迁移
+        // 例：if (oldVersion < 2) { await db.execute('ALTER TABLE ...'); }
       },
     );
     return _db!;
@@ -212,22 +223,37 @@ class UsageProvider extends ChangeNotifier {
   }
 
   String _appNameOf(String packageName) {
-    final p = packageName.toLowerCase();
-    if (p.contains('com.tencent.mm')) return '微信';
-    if (p.contains('com.tencent.mobileqq')) return 'QQ';
-    if (p.contains('com.zhihu')) return '知乎';
-    if (p.contains('cn.jingwei')) return '今日头条';
-    if (p.contains('com.sina.weibo')) return '微博';
-    if (p.contains('com.ishumei')) return '输入法的App';
-    return packageName.split('.').last;
+    const _appNameMap = {
+      'com.tencent.mm': '微信',
+      'com.tencent.mobileqq': 'QQ',
+      'com.zhihu': '知乎',
+      'cn.jingwei': '今日头条',
+      'com.sina.weibo': '微博',
+      'com.ishumei': '输入法',
+      'com.ss.android.ugc.aweme': '抖音',
+      'com.baidu.input': '百度输入法',
+      'com.iflytek.inputmethod': '讯飞输入法',
+    };
+    for (final entry in _appNameMap.entries) {
+      if (packageName.contains(entry.key)) {
+        return entry.value;
+      }
+    }
+    // 兜底：取最后一段，清理掉可能的数字后缀
+    final last = packageName.split('.').last;
+    final cleaned = last.replaceAll(RegExp(r'\d+$'), '');
+    return cleaned.isEmpty ? last : cleaned;
   }
 
-  Future<void> simulateTodayData() async {
+  /// 填充今日模拟数据（仅在数据库无今日数据时调用一次）
+  /// 不再内部调用 loadToday()，由调用方负责刷新 UI
+  Future<void> populateSimulatedData() async {
     final today = DateTime.now();
     final db = await this.db;
     final key = _dateKey(today);
-    final existing = await db.query(_tableName, where: 'date = ?', whereArgs: [key]);
 
+    // 先确保有今日汇总记录
+    final existing = await db.query(_tableName, where: 'date = ?', whereArgs: [key]);
     if (existing.isEmpty) {
       await db.insert(_tableName, {
         'date': key,
@@ -260,7 +286,10 @@ class UsageProvider extends ChangeNotifier {
         });
       }
     }
+  }
 
+  /// 刷新今日数据（供外部调用）
+  Future<void> refreshToday() async {
     await loadToday();
   }
 }
