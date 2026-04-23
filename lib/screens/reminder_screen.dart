@@ -14,7 +14,7 @@ class ReminderScreen extends ConsumerStatefulWidget {
 
 class _ReminderScreenState extends ConsumerState<ReminderScreen> {
   Timer? _timer;
-  int _elapsed = 0;
+  int _elapsedSeconds = 0;
   bool _isRunning = false;
 
   @override
@@ -31,24 +31,35 @@ class _ReminderScreenState extends ConsumerState<ReminderScreen> {
 
   void _startTimer(int intervalMinutes) {
     _timer?.cancel();
-    _elapsed = 0;
+    _elapsedSeconds = 0;
     _isRunning = true;
-    _timer = Timer.periodic(const Duration(minutes: 1), (timer) {
-      _elapsed++;
-      if (_elapsed >= intervalMinutes) {
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      _elapsedSeconds++;
+      if (_elapsedSeconds >= intervalMinutes * 60) {
         _triggerReminder();
-        _elapsed = 0;
+        _elapsedSeconds = 0;
       }
-      setState(() {});
+      if (mounted) setState(() {});
     });
-    setState(() {});
+    if (mounted) setState(() {});
   }
 
   void _stopTimer() {
     _timer?.cancel();
     _isRunning = false;
-    _elapsed = 0;
-    setState(() {});
+    _elapsedSeconds = 0;
+    if (mounted) setState(() {});
+  }
+
+  int get _remainingSeconds {
+    final settings = ref.watch(settingsProviderProvider);
+    return settings.reminderInterval * 60 - _elapsedSeconds;
+  }
+
+  double get _progress {
+    final settings = ref.watch(settingsProviderProvider);
+    final total = settings.reminderInterval * 60;
+    return (_elapsedSeconds / total).clamp(0.0, 1.0);
   }
 
   Future<void> _triggerReminder() async {
@@ -200,10 +211,7 @@ class _ReminderScreenState extends ConsumerState<ReminderScreen> {
                           width: 160,
                           height: 160,
                           child: CircularProgressIndicator(
-                            value: _isRunning
-                                ? (_elapsed / settings.reminderInterval)
-                                    .clamp(0.0, 1.0)
-                                : 0,
+                            value: _isRunning ? _progress : 0,
                             strokeWidth: 12,
                             backgroundColor: Colors.grey[200],
                             valueColor: const AlwaysStoppedAnimation(
@@ -215,8 +223,8 @@ class _ReminderScreenState extends ConsumerState<ReminderScreen> {
                           children: [
                             Text(
                               _isRunning
-                                  ? '${settings.reminderInterval - _elapsed}'
-                                  : '--',
+                                  ? _formatSeconds(_remainingSeconds)
+                                  : '--:--',
                               style: const TextStyle(
                                 fontSize: 48,
                                 fontWeight: FontWeight.bold,
@@ -224,7 +232,7 @@ class _ReminderScreenState extends ConsumerState<ReminderScreen> {
                               ),
                             ),
                             Text(
-                              '分钟',
+                              '剩余时间',
                               style: TextStyle(
                                 color: Colors.grey[600],
                                 fontSize: 14,
@@ -374,6 +382,12 @@ class _ReminderScreenState extends ConsumerState<ReminderScreen> {
 
   String _formatTime(DateTime t) {
     return '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}:${t.second.toString().padLeft(2, '0')}';
+  }
+
+  String _formatSeconds(int seconds) {
+    final m = seconds ~/ 60;
+    final s = seconds % 60;
+    return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
   }
 }
 
