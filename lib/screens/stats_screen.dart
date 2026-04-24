@@ -14,14 +14,26 @@ class StatsScreen extends ConsumerStatefulWidget {
 }
 
 class _StatsScreenState extends ConsumerState<StatsScreen> {
+  bool _synced = false;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (_synced) return;
+      _synced = true;
       // 启动屏幕时间追踪服务
-      await UsageStatsService.startTracking();
+      try {
+        await UsageStatsService.startTracking();
+      } catch (_) {}
       // 同步屏幕时间到数据库
-      await _syncScreenTime();
+      try {
+        await _syncScreenTime();
+      } catch (_) {}
+      // 如果同步失败，加载已有数据
+      try {
+        ref.read(usageProviderProvider.notifier).loadToday();
+      } catch (_) {}
     });
   }
 

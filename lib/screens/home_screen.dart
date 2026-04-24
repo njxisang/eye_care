@@ -163,56 +163,62 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final isActive = settings.blueLightEnabled;
     return Card(
       color: isActive ? const Color(0xFFFFF8E1) : Colors.white,
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Row(
-          children: [
-            Icon(
-              isActive ? Icons.visibility : Icons.visibility_off,
-              size: 48,
-              color: isActive ? const Color(0xFFFF9800) : Colors.grey,
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    isActive ? '护眼模式已开启' : '护眼模式已关闭',
+      child: InkWell(
+        onTap: () {
+          context.go('/blue-light');
+        },
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Row(
+            children: [
+              Icon(
+                isActive ? Icons.visibility : Icons.visibility_off,
+                size: 48,
+                color: isActive ? const Color(0xFFFF9800) : Colors.grey,
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      isActive ? '护眼模式已开启' : '护眼模式已关闭',
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      isActive
+                          ? '色温 ${(settings.blueLightIntensity * 100).toInt()}% | ${settings.getPresetLabel()}'
+                          : '点击上方开关启用护眼模式',
+                      style: TextStyle(
+                        color: Colors.grey[600],
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (isActive)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFF9800).withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    '${(settings.blueLightIntensity * 100).toInt()}%',
                     style: const TextStyle(
-                      fontSize: 18,
+                      color: Color(0xFFFF9800),
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    isActive
-                        ? '色温 ${(settings.blueLightIntensity * 100).toInt()}% | ${settings.getPresetLabel()}'
-                        : '点击上方开关启用护眼模式',
-                    style: TextStyle(
-                      color: Colors.grey[600],
-                      fontSize: 14,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            if (isActive)
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFF9800).withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(20),
                 ),
-                child: Text(
-                  '${(settings.blueLightIntensity * 100).toInt()}%',
-                  style: const TextStyle(
-                    color: Color(0xFFFF9800),
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-          ],
+            ],
+          ),
         ),
       ),
     );
