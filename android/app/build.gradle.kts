@@ -38,6 +38,15 @@ android {
             signingConfig = signingConfigs.getByName("debug")
         }
     }
+
+    // 重命名输出 APK：eye_care-debug.apk / eye_care-release.apk
+    applicationVariants.all {
+        val variant = this
+        outputs.all {
+            val output = this as com.android.build.gradle.api.ApkVariantOutput
+            output.outputFileName = "eye_care-${variant.name}.apk"
+        }
+    }
 }
 
 flutter {
