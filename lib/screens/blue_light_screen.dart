@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/settings_provider.dart';
@@ -11,6 +12,15 @@ class BlueLightScreen extends ConsumerStatefulWidget {
 }
 
 class _BlueLightScreenState extends ConsumerState<BlueLightScreen> {
+  /// 用于滑块拖动的防抖 Timer
+  Timer? _debounceTimer;
+
+  @override
+  void dispose() {
+    _debounceTimer?.cancel();
+    super.dispose();
+  }
+
   @override
   void initState() {
     super.initState();
@@ -26,6 +36,17 @@ class _BlueLightScreenState extends ConsumerState<BlueLightScreen> {
     } else {
       BlueLightService.removeFilter();
     }
+  }
+
+  /// 防抖更新滤镜：滑块拖动时延迟 100ms 更新，避免频繁重建 Overlay
+  void _onIntensityChanged(double intensity) {
+    _debounceTimer?.cancel();
+    _debounceTimer = Timer(const Duration(milliseconds: 100), () {
+      final settings = ref.read(settingsProviderProvider);
+      if (settings.blueLightEnabled) {
+        BlueLightService.setFilter(intensity, context);
+      }
+    });
   }
 
   @override
@@ -104,7 +125,7 @@ class _BlueLightScreenState extends ConsumerState<BlueLightScreen> {
                         divisions: 20,
                         onChanged: (v) async {
                           await settings.setBlueLightIntensity(v);
-                          _applyFilter();
+                          _onIntensityChanged(v);
                         },
                       ),
                     ),

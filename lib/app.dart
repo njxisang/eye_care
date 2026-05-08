@@ -44,6 +44,24 @@ class EyeCareApp extends ConsumerWidget {
         colorScheme: ColorScheme.fromSeed(
           seedColor: const Color(0xFF4CAF50),
           brightness: Brightness.dark,
+          surface: const Color(0xFF1E1E1E),
+        ),
+        scaffoldBackgroundColor: const Color(0xFF121212),
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Color(0xFF1E1E1E),
+          foregroundColor: Colors.white,
+          elevation: 0,
+        ),
+        cardTheme: CardThemeData(
+          elevation: 2,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+        ),
+        sliderTheme: const SliderThemeData(
+          activeTrackColor: Color(0xFF4CAF50),
+          thumbColor: Color(0xFF4CAF50),
+          overlayColor: Color(0x294CAF50),
         ),
       ),
       themeMode: themeMode,

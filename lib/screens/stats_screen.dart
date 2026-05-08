@@ -3,8 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 import '../providers/usage_provider.dart';
-import '../services/usage_stats_service.dart';
 import '../widgets/stat_card.dart';
+import '../utils/format_utils.dart';
 
 class StatsScreen extends ConsumerStatefulWidget {
   const StatsScreen({super.key});
@@ -14,36 +14,13 @@ class StatsScreen extends ConsumerStatefulWidget {
 }
 
 class _StatsScreenState extends ConsumerState<StatsScreen> {
-  bool _synced = false;
-
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      if (_synced) return;
-      _synced = true;
-      // 启动屏幕时间追踪服务
-      try {
-        await UsageStatsService.startTracking();
-      } catch (_) {}
-      // 同步屏幕时间到数据库
-      try {
-        await _syncScreenTime();
-      } catch (_) {}
-      // 如果同步失败，加载已有数据
-      try {
-        ref.read(usageProviderProvider.notifier).loadToday();
-      } catch (_) {}
+    // 初始化时同步一次屏幕时间（由 Provider 统一管理，不重复调用）
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(usageProviderProvider.notifier).syncScreenTimeFromNative();
     });
-  }
-
-  Future<void> _syncScreenTime() async {
-    final usage = ref.read(usageProviderProvider);
-    final screenMinutes = await UsageStatsService.getTodayScreenMinutes();
-    // 用屏幕时间更新数据库，如果今日已有数据则累加
-    if (screenMinutes > 0) {
-      await usage.addMinutes(screenMinutes);
-    }
   }
 
   @override
@@ -72,7 +49,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                 Expanded(
                   child: StatCard(
                     title: '今日',
-                    value: _formatMinutes(usage.todayTotalMinutes),
+                    value: FormatUtils.formatMinutes(usage.todayTotalMinutes),
                     subtitle: '总时长',
                     icon: Icons.today,
                     color: const Color(0xFF4CAF50),
@@ -82,7 +59,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                 Expanded(
                   child: StatCard(
                     title: '7日平均',
-                    value: _formatMinutes(_avgWeek(usage.weekUsage)),
+                    value: FormatUtils.formatMinutes(usage.avgWeekMinutes()),
                     subtitle: '日均',
                     icon: Icons.trending_flat,
                     color: const Color(0xFF2196F3),
@@ -402,7 +379,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  _formatMinutes(total),
+                  FormatUtils.formatMinutes(total),
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
@@ -410,7 +387,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                   ),
                 ),
                 Text(
-                  '/ ${_formatMinutes(goal)}',
+                  '/ ${FormatUtils.formatMinutes(goal)}',
                   style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                 ),
               ],
@@ -429,14 +406,14 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
     if (remaining > 0) {
       return Center(
         child: Text(
-          '今日还可使用 ${_formatMinutes(remaining)}',
+          '今日还可使用 ${FormatUtils.formatMinutes(remaining)}',
           style: const TextStyle(color: Color(0xFF4CAF50)),
         ),
       );
     } else {
       return Center(
         child: Text(
-          '已超过目标 ${_formatMinutes(-remaining)}',
+          '已超过目标 ${FormatUtils.formatMinutes(-remaining)}',
           style: const TextStyle(color: Colors.red),
         ),
       );
@@ -510,7 +487,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                   ),
                   const SizedBox(width: 4),
                   Text(
-                    _formatMinutes(e.value),
+                    FormatUtils.formatMinutes(e.value),
                     style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                   ),
                 ],
@@ -532,19 +509,6 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
     if (result != null) {
       await usage.setGoalMinutes(result);
     }
-  }
-
-  int _avgWeek(List<DayUsage> week) {
-    if (week.isEmpty) return 0;
-    final total = week.fold(0, (sum, d) => sum + d.totalMinutes);
-    return (total / week.length).round();
-  }
-
-  String _formatMinutes(int minutes) {
-    if (minutes < 60) return '${minutes}分钟';
-    final h = minutes ~/ 60;
-    final m = minutes % 60;
-    return m > 0 ? '${h}h${m}m' : '${h}h';
   }
 }
 

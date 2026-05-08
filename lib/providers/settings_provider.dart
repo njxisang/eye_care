@@ -60,40 +60,53 @@ class SettingsProvider extends ChangeNotifier {
   int get pomodoroBreakMinutes => _pomodoroBreakMinutes;
 
   Future<void> load() async {
-    final prefs = await SharedPreferences.getInstance();
-    _blueLightEnabled = prefs.getBool(_keyBlueLightEnabled) ?? false;
-    _blueLightIntensity = prefs.getDouble(_keyBlueLightIntensity) ?? 0.5;
-    _brightness = prefs.getDouble(_keyBrightness) ?? 0.7;
-    _autoBrightness = prefs.getBool(_keyAutoBrightness) ?? false;
-    _reminderEnabled = prefs.getBool(_keyReminderEnabled) ?? true;
-    _reminderInterval = prefs.getInt(_keyReminderInterval) ?? 20;
-    _scheduledStart = prefs.getString(_keyScheduledStart) ?? "22:00";
-    _scheduledEnd = prefs.getString(_keyScheduledEnd) ?? "07:00";
-    _scheduledEnabled = prefs.getBool(_keyScheduledEnabled) ?? false;
-    _dailyGoalMinutes = prefs.getInt(_keyDailyGoalMinutes) ?? 240;
-    _darkMode = prefs.getBool(_keyDarkMode) ?? false;
-    _onboardingCompleted = prefs.getBool(_keyOnboardingCompleted) ?? false;
-    _pomodoroWorkMinutes = prefs.getInt(_keyPomodoroWorkMinutes) ?? 25;
-    _pomodoroBreakMinutes = prefs.getInt(_keyPomodoroBreakMinutes) ?? 5;
-    notifyListeners();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      _blueLightEnabled = prefs.getBool(_keyBlueLightEnabled) ?? false;
+      _blueLightIntensity = prefs.getDouble(_keyBlueLightIntensity) ?? 0.5;
+      _brightness = prefs.getDouble(_keyBrightness) ?? 0.7;
+      _autoBrightness = prefs.getBool(_keyAutoBrightness) ?? false;
+      _reminderEnabled = prefs.getBool(_keyReminderEnabled) ?? true;
+      _reminderInterval = prefs.getInt(_keyReminderInterval) ?? 20;
+      _scheduledStart = prefs.getString(_keyScheduledStart) ?? "22:00";
+      _scheduledEnd = prefs.getString(_keyScheduledEnd) ?? "07:00";
+      _scheduledEnabled = prefs.getBool(_keyScheduledEnabled) ?? false;
+      _dailyGoalMinutes = prefs.getInt(_keyDailyGoalMinutes) ?? 240;
+      _darkMode = prefs.getBool(_keyDarkMode) ?? false;
+      _onboardingCompleted = prefs.getBool(_keyOnboardingCompleted) ?? false;
+      _pomodoroWorkMinutes = prefs.getInt(_keyPomodoroWorkMinutes) ?? 25;
+      _pomodoroBreakMinutes = prefs.getInt(_keyPomodoroBreakMinutes) ?? 5;
+    } catch (e) {
+      debugPrint('SettingsProvider.load failed: $e');
+      // 使用默认值继续运行，避免 app crash
+    } finally {
+      notifyListeners();
+    }
   }
 
+  /// 批量保存所有设置到 SharedPreferences
+  /// SharedPreferences 没有真正的事务，用 try-catch 提供基本错误隔离
   Future<void> _save() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_keyBlueLightEnabled, _blueLightEnabled);
-    await prefs.setDouble(_keyBlueLightIntensity, _blueLightIntensity);
-    await prefs.setDouble(_keyBrightness, _brightness);
-    await prefs.setBool(_keyAutoBrightness, _autoBrightness);
-    await prefs.setBool(_keyReminderEnabled, _reminderEnabled);
-    await prefs.setInt(_keyReminderInterval, _reminderInterval);
-    await prefs.setString(_keyScheduledStart, _scheduledStart);
-    await prefs.setString(_keyScheduledEnd, _scheduledEnd);
-    await prefs.setBool(_keyScheduledEnabled, _scheduledEnabled);
-    await prefs.setInt(_keyDailyGoalMinutes, _dailyGoalMinutes);
-    await prefs.setBool(_keyDarkMode, _darkMode);
-    await prefs.setBool(_keyOnboardingCompleted, _onboardingCompleted);
-    await prefs.setInt(_keyPomodoroWorkMinutes, _pomodoroWorkMinutes);
-    await prefs.setInt(_keyPomodoroBreakMinutes, _pomodoroBreakMinutes);
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(_keyBlueLightEnabled, _blueLightEnabled);
+      await prefs.setDouble(_keyBlueLightIntensity, _blueLightIntensity);
+      await prefs.setDouble(_keyBrightness, _brightness);
+      await prefs.setBool(_keyAutoBrightness, _autoBrightness);
+      await prefs.setBool(_keyReminderEnabled, _reminderEnabled);
+      await prefs.setInt(_keyReminderInterval, _reminderInterval);
+      await prefs.setString(_keyScheduledStart, _scheduledStart);
+      await prefs.setString(_keyScheduledEnd, _scheduledEnd);
+      await prefs.setBool(_keyScheduledEnabled, _scheduledEnabled);
+      await prefs.setInt(_keyDailyGoalMinutes, _dailyGoalMinutes);
+      await prefs.setBool(_keyDarkMode, _darkMode);
+      await prefs.setBool(_keyOnboardingCompleted, _onboardingCompleted);
+      await prefs.setInt(_keyPomodoroWorkMinutes, _pomodoroWorkMinutes);
+      await prefs.setInt(_keyPomodoroBreakMinutes, _pomodoroBreakMinutes);
+    } catch (e) {
+      debugPrint('SettingsProvider._save failed: $e');
+      rethrow;
+    }
   }
 
   Future<void> setBlueLightEnabled(bool v) async {

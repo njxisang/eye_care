@@ -6,6 +6,7 @@ import '../providers/usage_provider.dart';
 import '../providers/reminder_provider.dart';
 import '../services/blue_light_service.dart';
 import '../widgets/stat_card.dart';
+import '../utils/format_utils.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -27,6 +28,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final settings = ref.read(settingsProviderProvider);
     if (settings.blueLightEnabled) {
       BlueLightService.setFilter(settings.blueLightIntensity, context);
+    } else {
+      BlueLightService.removeFilter();
     }
   }
 
@@ -66,7 +69,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 Expanded(
                   child: StatCard(
                     title: '今日时长',
-                    value: _formatMinutes(usage.todayTotalMinutes),
+                    value: FormatUtils.formatMinutes(usage.todayTotalMinutes),
                     subtitle: '目标 ${usage.todayUsage?.goalMinutes ?? 240} 分钟',
                     icon: Icons.timer_outlined,
                     color: _getUsageColor(usage.todayUsage?.goalProgress ?? 0),
@@ -260,7 +263,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
                 Text(
-                  '${_formatMinutes(usage.todayUsage!.totalMinutes)} / ${_formatMinutes(usage.todayUsage!.goalMinutes)}',
+                  '${FormatUtils.formatMinutes(usage.todayUsage!.totalMinutes)} / ${FormatUtils.formatMinutes(usage.todayUsage!.goalMinutes)}',
                   style: TextStyle(color: Colors.grey[600]),
                 ),
               ],
@@ -281,7 +284,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               Padding(
                 padding: const EdgeInsets.only(top: 8),
                 child: Text(
-                  '⚠️ 已超过今日目标 ${_formatMinutes(usage.todayUsage!.totalMinutes - usage.todayUsage!.goalMinutes)}',
+                  '⚠️ 已超过今日目标 ${FormatUtils.formatMinutes(usage.todayUsage!.totalMinutes - usage.todayUsage!.goalMinutes)}',
                   style: const TextStyle(color: Colors.red, fontSize: 12),
                 ),
               ),
@@ -289,13 +292,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ),
       ),
     );
-  }
-
-  String _formatMinutes(int minutes) {
-    if (minutes < 60) return '${minutes}分钟';
-    final h = minutes ~/ 60;
-    final m = minutes % 60;
-    return m > 0 ? '${h}h${m}m' : '${h}h';
   }
 
   Color _getUsageColor(double progress) {

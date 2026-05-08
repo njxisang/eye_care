@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/settings_provider.dart';
 import '../providers/reminder_provider.dart';
@@ -16,10 +17,15 @@ class _ReminderScreenState extends ConsumerState<ReminderScreen> {
   void initState() {
     super.initState();
     NotificationService.init();
+    // 注册 App 生命周期监听，防止后台 Timer 累积误差
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(reminderProviderProvider.notifier).registerLifecycleCallbacks();
+    });
   }
 
   @override
   void dispose() {
+    ref.read(reminderProviderProvider.notifier).unregisterLifecycleCallbacks();
     super.dispose();
   }
 
@@ -111,7 +117,10 @@ class _ReminderScreenState extends ConsumerState<ReminderScreen> {
                       subtitle: const Text('开启后自动定时提醒'),
                       trailing: Switch(
                         value: settings.reminderEnabled,
-                        onChanged: (v) => settings.setReminderEnabled(v),
+                        onChanged: (v) async {
+                          await settings.setReminderEnabled(v);
+                          reminder.setEnabled(v);
+                        },
                         activeColor: const Color(0xFF4CAF50),
                       ),
                     ),
@@ -141,6 +150,7 @@ class _ReminderScreenState extends ConsumerState<ReminderScreen> {
                             onSelected: (v) {
                               if (v) {
                                 settings.setReminderInterval(mins);
+                                // updateInterval 会自动以新间隔重启 Timer（如正在运行）
                                 reminder.updateInterval(mins);
                               }
                             },

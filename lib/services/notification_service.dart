@@ -10,24 +10,30 @@ class NotificationService {
   static Future<void> init() async {
     if (_initialized) return;
 
-    const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
-    const initSettings = InitializationSettings(android: androidSettings);
+    try {
+      const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
+      const initSettings = InitializationSettings(android: androidSettings);
 
-    await _plugin.initialize(
-      initSettings,
-      onDidReceiveNotificationResponse: (response) {
-        // 处理通知点击
-      },
-    );
+      await _plugin.initialize(
+        initSettings,
+        onDidReceiveNotificationResponse: (response) {
+          // 处理通知点击
+        },
+      );
 
-    // 请求通知权限（Android 13+）
-    final androidPlugin = _plugin.resolvePlatformSpecificImplementation<
-        AndroidFlutterLocalNotificationsPlugin>();
-    if (androidPlugin != null) {
-      await androidPlugin.requestNotificationsPermission();
+      // 请求通知权限（Android 13+）
+      final androidPlugin = _plugin.resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin>();
+      if (androidPlugin != null) {
+        await androidPlugin.requestNotificationsPermission();
+      }
+
+      _initialized = true;
+    } catch (e) {
+      // 通知初始化失败不影响主功能，记录日志继续运行
+      // ignore: avoid_print
+      print('NotificationService.init failed: $e');
     }
-
-    _initialized = true;
   }
 
   /// 护眼提醒：20-20-20法则

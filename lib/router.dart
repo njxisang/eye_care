@@ -7,12 +7,12 @@ import 'screens/stats_screen.dart';
 import 'screens/knowledge_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/pomodoro_screen.dart';
+import '../services/blue_light_service.dart';
 
-final _rootNavigatorKey = GlobalKey<NavigatorState>();
 final _shellNavigatorKey = GlobalKey<NavigatorState>();
 
 final router = GoRouter(
-  navigatorKey: _rootNavigatorKey,
+  navigatorKey: RootNavigatorService.rootNavigatorKey,
   initialLocation: '/',
   routes: [
     ShellRoute(
@@ -49,17 +49,17 @@ final router = GoRouter(
     ),
     GoRoute(
       path: '/knowledge',
-      parentNavigatorKey: _rootNavigatorKey,
+      parentNavigatorKey: RootNavigatorService.rootNavigatorKey,
       builder: (context, state) => const KnowledgeScreen(),
     ),
     GoRoute(
       path: '/settings',
-      parentNavigatorKey: _rootNavigatorKey,
+      parentNavigatorKey: RootNavigatorService.rootNavigatorKey,
       builder: (context, state) => const SettingsScreen(),
     ),
     GoRoute(
       path: '/pomodoro',
-      parentNavigatorKey: _rootNavigatorKey,
+      parentNavigatorKey: RootNavigatorService.rootNavigatorKey,
       builder: (context, state) => const PomodoroScreen(),
     ),
   ],

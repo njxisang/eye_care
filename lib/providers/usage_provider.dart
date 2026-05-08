@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart' as path;
 import 'package:intl/intl.dart';
+import '../services/usage_stats_service.dart';
 
 final usageProviderProvider = ChangeNotifierProvider<UsageProvider>((ref) {
   return UsageProvider();
@@ -47,7 +49,8 @@ class DayUsage {
 }
 
 class UsageProvider extends ChangeNotifier {
-  static Database? _db;
+  // Completer 保证数据库只初始化一次，避免懒加载竞态
+  static Future<Database>? _dbCompleter;
   static const String _tableName = 'usage_records';
   static const String _tableName2 = 'app_usage';
 
@@ -60,9 +63,14 @@ class UsageProvider extends ChangeNotifier {
   int get todayTotalMinutes => _todayTotalMinutes;
 
   Future<Database> get db async {
-    if (_db != null) return _db!;
+    if (_dbCompleter != null) return _dbCompleter!;
+    _dbCompleter = _initDb();
+    return _dbCompleter!;
+  }
+
+  static Future<Database> _initDb() async {
     final dbPath = await getDatabasesPath();
-    _db = await openDatabase(
+    return openDatabase(
       path.join(dbPath, 'eye_care.db'),
       version: 1,
       onCreate: (db, version) async {
@@ -90,7 +98,6 @@ class UsageProvider extends ChangeNotifier {
         // 例：if (oldVersion < 2) { await db.execute('ALTER TABLE ...'); }
       },
     );
-    return _db!;
   }
 
   String _dateKey(DateTime d) => DateFormat('yyyy-MM-dd').format(d);
@@ -99,8 +106,8 @@ class UsageProvider extends ChangeNotifier {
     final today = DateTime.now();
     _todayTotalMinutes = await _getDayMinutes(today);
 
-    final db = await this.db;
-    final dayRow = await db.query(
+    final database = await db;
+    final dayRow = await database.query(
       _tableName,
       where: 'date = ?',
       whereArgs: [_dateKey(today)],
@@ -133,8 +140,8 @@ class UsageProvider extends ChangeNotifier {
     for (int i = 6; i >= 0; i--) {
       final d = now.subtract(Duration(days: i));
       final mins = await _getDayMinutes(d);
-      final db = await this.db;
-      final row = await db.query(_tableName, where: 'date = ?', whereArgs: [_dateKey(d)]);
+      final database = await db;
+      final row = await database.query(_tableName, where: 'date = ?', whereArgs: [_dateKey(d)]);
       _weekUsage.add(DayUsage(
         date: d,
         totalMinutes: mins,
@@ -145,15 +152,15 @@ class UsageProvider extends ChangeNotifier {
   }
 
   Future<int> _getDayMinutes(DateTime day) async {
-    final db = await this.db;
-    final row = await db.query(_tableName, where: 'date = ?', whereArgs: [_dateKey(day)]);
+    final database = await db;
+    final row = await database.query(_tableName, where: 'date = ?', whereArgs: [_dateKey(day)]);
     if (row.isNotEmpty) return row[0]['total_minutes'] as int;
     return 0;
   }
 
   Future<List<AppUsage>> _getDayApps(DateTime day) async {
-    final db = await this.db;
-    final rows = await db.query(_tableName2, where: 'date = ?', whereArgs: [_dateKey(day)]);
+    final database = await db;
+    final rows = await database.query(_tableName2, where: 'date = ?', whereArgs: [_dateKey(day)]);
     return rows.map((r) => AppUsage(
       packageName: r['package_name'] as String,
       appName: r['app_name'] as String,
@@ -164,18 +171,18 @@ class UsageProvider extends ChangeNotifier {
 
   Future<void> addMinutes(int minutes) async {
     final today = DateTime.now();
-    final db = await this.db;
+    final database = await db;
     final key = _dateKey(today);
-    final existing = await db.query(_tableName, where: 'date = ?', whereArgs: [key]);
+    final existing = await database.query(_tableName, where: 'date = ?', whereArgs: [key]);
 
     if (existing.isEmpty) {
-      await db.insert(_tableName, {
+      await database.insert(_tableName, {
         'date': key,
         'total_minutes': minutes,
         'goal_minutes': 240,
       });
     } else {
-      await db.rawUpdate(
+      await database.rawUpdate(
         'UPDATE $_tableName SET total_minutes = total_minutes + ? WHERE date = ?',
         [minutes, key],
       );
@@ -186,9 +193,9 @@ class UsageProvider extends ChangeNotifier {
 
   Future<void> setGoalMinutes(int minutes) async {
     final today = DateTime.now();
-    final db = await this.db;
+    final database = await db;
     final key = _dateKey(today);
-    await db.update(
+    await database.update(
       _tableName,
       {'goal_minutes': minutes},
       where: 'date = ?',
@@ -201,63 +208,63 @@ class UsageProvider extends ChangeNotifier {
     await loadToday();
   }
 
-  String _categoryOf(String packageName) {
-    final p = packageName.toLowerCase();
-    if (p.contains('weibo') || p.contains('weixin') || p.contains('qq') ||
-        p.contains('telegram') || p.contains('whatsapp') || p.contains('discord')) {
-      return '社交';
+  /// 从原生服务同步屏幕使用时间到数据库
+  /// 当前版本通过 UsageStatsService 调用原生（需配合 Android 原生代码）
+  /// 若原生服务不可用，则跳过同步，保留本地数据
+  Future<void> syncScreenTimeFromNative() async {
+    try {
+      final screenMinutes = await UsageStatsService.getTodayScreenMinutes();
+      if (screenMinutes > 0) {
+        final today = DateTime.now();
+        final database = await db;
+        final key = _dateKey(today);
+        final existing = await database.query(_tableName, where: 'date = ?', whereArgs: [key]);
+        if (existing.isEmpty) {
+          await database.insert(_tableName, {
+            'date': key,
+            'total_minutes': screenMinutes,
+            'goal_minutes': 240,
+          });
+        } else {
+          // 如果本地记录比原生更少，则用原生数据覆盖
+          final local = existing[0]['total_minutes'] as int;
+          if (screenMinutes > local) {
+            await database.update(
+              _tableName,
+              {'total_minutes': screenMinutes},
+              where: 'date = ?',
+              whereArgs: [key],
+            );
+          }
+        }
+        await loadToday();
+      }
+    } catch (e) {
+      // 原生服务不可用（未授权/无原生实现），静默跳过
+      debugPrint('syncScreenTimeFromNative skipped: $e');
     }
-    if (p.contains('douyin') || p.contains('youtube') || p.contains('bilibili') ||
-        p.contains('netflix') || p.contains('video') || p.contains('腾讯视频') ||
-        p.contains('爱奇艺') || p.contains('优酷')) {
-      return '视频';
-    }
-    if (p.contains('game') || p.contains('游戏')) {
-      return '游戏';
-    }
-    if (p.contains('read') || p.contains('阅读') || p.contains('book') ||
-        p.contains('知乎') || p.contains('今日头条')) {
-      return '阅读';
-    }
-    return '其他';
   }
 
-  String _appNameOf(String packageName) {
-    const _appNameMap = {
-      'com.tencent.mm': '微信',
-      'com.tencent.mobileqq': 'QQ',
-      'com.zhihu': '知乎',
-      'cn.jingwei': '今日头条',
-      'com.sina.weibo': '微博',
-      'com.ishumei': '输入法',
-      'com.ss.android.ugc.aweme': '抖音',
-      'com.baidu.input': '百度输入法',
-      'com.iflytek.inputmethod': '讯飞输入法',
-    };
-    for (final entry in _appNameMap.entries) {
-      if (packageName.contains(entry.key)) {
-        return entry.value;
-      }
-    }
-    // 兜底：取最后一段，清理掉可能的数字后缀
-    final last = packageName.split('.').last;
-    final cleaned = last.replaceAll(RegExp(r'\d+$'), '');
-    return cleaned.isEmpty ? last : cleaned;
+  /// 计算 7 日平均使用时长（分钟）
+  int avgWeekMinutes() {
+    if (_weekUsage.isEmpty) return 0;
+    final total = _weekUsage.fold(0, (sum, d) => sum + d.totalMinutes);
+    return (total / _weekUsage.length).round();
   }
 
   /// 填充今日模拟数据（仅在数据库无今日数据时调用一次）
   /// 不再内部调用 loadToday()，由调用方负责刷新 UI
   Future<void> populateSimulatedData() async {
     final today = DateTime.now();
-    final db = await this.db;
+    final database = await db;
     final key = _dateKey(today);
 
     // 检查是否已有今日数据，如果有就不再填充模拟数据
-    final existing = await db.query(_tableName, where: 'date = ?', whereArgs: [key]);
+    final existing = await database.query(_tableName, where: 'date = ?', whereArgs: [key]);
     if (existing.isNotEmpty) return;
 
     // 无数据时才填充模拟演示数据
-    await db.insert(_tableName, {
+    await database.insert(_tableName, {
       'date': key,
       'total_minutes': 0,
       'goal_minutes': 240,
@@ -272,13 +279,13 @@ class UsageProvider extends ChangeNotifier {
     ];
 
     for (final app in apps) {
-      final existingApp = await db.query(
+      final existingApp = await database.query(
         _tableName2,
         where: 'date = ? AND package_name = ?',
         whereArgs: [key, app.$1],
       );
       if (existingApp.isEmpty) {
-        await db.insert(_tableName2, {
+        await database.insert(_tableName2, {
           'date': key,
           'package_name': app.$1,
           'app_name': app.$2,
@@ -292,12 +299,5 @@ class UsageProvider extends ChangeNotifier {
   /// 刷新今日数据（供外部调用）
   Future<void> refreshToday() async {
     await loadToday();
-  }
-
-  /// 从原生服务同步屏幕使用时间
-  Future<void> syncScreenTimeFromNative() async {
-    // 使用 MethodChannel 调用原生代码获取屏幕时间
-    // 这会触发 ScreenTimeService 返回当前累计的分钟数
-    // 然后存入数据库
   }
 }
